@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.room.Delete
 import coil.compose.AsyncImage
 import com.example.bitewise.viewmodel.GenerateViewModel
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

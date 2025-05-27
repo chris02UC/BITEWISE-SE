@@ -13,12 +13,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.bitewise.viewmodel.GenerateViewModel
 
-@SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealDetailScreen(
     vm: GenerateViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    fromSaved: Boolean         // new flag
 ) {
     val meal = vm.selectedMeal ?: return
 
@@ -52,16 +52,20 @@ fun MealDetailScreen(
                 Text("Instructions:", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Text(meal.instructions, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        vm.addMeal(meal)
-                        onBack()
-                    },
-                    enabled = vm.uiState.value.currentPlan.size < 3,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Add to Meal Plan")
+
+                // only show this when NOT viewing a saved plan
+                if (!fromSaved) {
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            vm.addMeal(meal)
+                            onBack()
+                        },
+                        enabled = vm.uiState.value.currentPlan.size < 3,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add to Meal Plan")
+                    }
                 }
             }
         }

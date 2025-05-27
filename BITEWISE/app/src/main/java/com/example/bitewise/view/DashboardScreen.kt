@@ -1,5 +1,7 @@
 package com.example.bitewise.view
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -18,47 +21,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bitewise.model.Meal
+import com.example.bitewise.model.MealPlan
+import com.example.bitewise.viewmodel.GenerateViewModel
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DashboardScreen(
-    plans: List<List<Meal>>,
+    vm: GenerateViewModel,
+    onPlanClick: (MealPlan) -> Unit,
     onGenerateClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Button(
-            onClick = onGenerateClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    val plans = vm.savedPlans
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Button(onClick = onGenerateClick, modifier = Modifier.fillMaxWidth()) {
             Text("Generate Meal Plan")
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
         Text("Saved Meal Plans", style = MaterialTheme.typography.titleMedium)
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
         if (plans.isEmpty()) {
             Text("No saved plans yet.", style = MaterialTheme.typography.bodyMedium)
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                itemsIndexed(plans) { index, plan ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* detail screen if desired */ }
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(plans) { plan ->
+                    Card(modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            vm.selectPlan(plan)
+                            onPlanClick(plan)
+                        }
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("Plan ${index + 1}", style = MaterialTheme.typography.titleSmall)
-                            Spacer(Modifier.height(4.dp))
-                            plan.forEach { meal ->
+                            Text("Plan #${plan.id}", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                plan.dateCreated.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            plan.meals.forEach { meal ->
                                 Text("• ${meal.name}", style = MaterialTheme.typography.bodyMedium)
                             }
                         }
