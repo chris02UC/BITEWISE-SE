@@ -1,6 +1,11 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.application)         // ✅ 유지
     alias(libs.plugins.kotlin.android)
+<<<<<<< Updated upstream
+=======
+    alias(libs.plugins.kotlin.plugin.compose)
+    id("com.google.gms.google-services")            // ✅ Firebase용
+>>>>>>> Stashed changes
 }
 
 android {
@@ -66,4 +71,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+
+
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
 }
+
+// build.gradle.kts app level
