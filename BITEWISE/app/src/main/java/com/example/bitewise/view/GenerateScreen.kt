@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-// import androidx.compose.material.icons.filled.ArrowBack // Not used directly here
+import androidx.compose.material.icons.filled.ArrowBack // Import ArrowBack
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star // For the new button icon
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,31 +38,38 @@ fun GenerateScreen(
     onDetail: () -> Unit,
     onPlan: () -> Unit,
     onIngredientSelect: () -> Unit,
-    onAutoGenerateIngredientSelect: () -> Unit // New callback from AppNavHost
+    onAutoGenerateIngredientSelect: () -> Unit,
+    onBack: () -> Unit // New parameter for back navigation
 ) {
     val state by vm.uiState.collectAsState()
     var input by remember { mutableStateOf("") }
 
-    // For showing snackbar messages
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show info message from ViewModel in a Snackbar
-    // This LaunchedEffect will trigger when state.infoMessage changes.
     LaunchedEffect(state.infoMessage) {
         state.infoMessage?.let { message ->
             snackbarHostState.showSnackbar(
                 message = message,
                 duration = SnackbarDuration.Short
             )
-            vm.clearInfoMessage() // Important: Clear the message in VM after showing
+            vm.clearInfoMessage()
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }, // Add SnackbarHost to Scaffold
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Generate Meal Plan") },
+                // Add navigationIcon for the back button
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = onPlan, enabled = state.currentPlan.isNotEmpty()) {
                         Icon(Icons.Default.List, contentDescription = "View Plan")
@@ -76,8 +83,8 @@ fun GenerateScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding) // Apply padding from Scaffold
-                    .padding(16.dp) // Your screen's own padding
+                    .padding(padding)
+                    .padding(16.dp)
             ) {
                 OutlinedTextField(
                     value = input,
@@ -89,7 +96,6 @@ fun GenerateScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Row for existing search buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -103,23 +109,22 @@ fun GenerateScreen(
                         Text("Search by Name")
                     }
                     Button(
-                        onClick = onIngredientSelect, // This is for the general ingredient filter
+                        onClick = onIngredientSelect,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.FilterList, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("By Ingredients") // Suggestion: Rename for clarity vs. new button
+                        Text("By Ingredients")
                     }
                 }
 
-                Spacer(Modifier.height(12.dp)) // Space before the new button
+                Spacer(Modifier.height(12.dp))
 
-                // New Button for Auto-Generate Plan by Ingredients
                 Button(
-                    onClick = onAutoGenerateIngredientSelect, // Use the new callback
+                    onClick = onAutoGenerateIngredientSelect,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Filled.Star, contentDescription = "Auto-generate") // Example Icon
+                    Icon(Icons.Filled.Star, contentDescription = "Auto-generate")
                     Spacer(Modifier.width(4.dp))
                     Text("Auto-Generate Plan by Ingredients")
                 }
@@ -129,12 +134,7 @@ fun GenerateScreen(
                 Text("Search Results:", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
 
-                // Displaying search results or a message if search results are empty
                 if (state.searchResults.isEmpty()) {
-                    // You can choose to show a default message here if needed,
-                    // or let the Snackbar handle all informational messages.
-                    // For instance, if a search by name yielded no results,
-                    // the ViewModel would set infoMessage, handled by Snackbar.
                     Text(
                         "No search results to display. Try a different search or filter.",
                         style = MaterialTheme.typography.bodyMedium
@@ -144,7 +144,7 @@ fun GenerateScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // Ensure LazyColumn takes available space
+                            .weight(1f)
                     ) {
                         items(state.searchResults) { meal ->
                             Card(
@@ -166,7 +166,7 @@ fun GenerateScreen(
                                         contentDescription = meal.name,
                                         modifier = Modifier.size(56.dp)
                                     )
-                                    Column(modifier = Modifier.weight(1f)) { // Allow text to take space
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(meal.name, style = MaterialTheme.typography.bodyLarge)
                                         Text(
                                             "Tap to view details",
