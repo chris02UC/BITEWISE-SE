@@ -17,7 +17,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 data class GenerateUiState(
     val currentPlan: List<Meal> = emptyList(),
-    val searchResults: List<Meal> = emptyList()
+    val searchResults: List<Meal> = emptyList(),
+    val infoMessage: String? = null // For messages like "No meals found" or "Plan populated"
 )
 
 class GenerateViewModel : ViewModel() {
@@ -40,40 +41,127 @@ class GenerateViewModel : ViewModel() {
     // --- API searches ---
     fun searchByName(query: String) = viewModelScope.launch {
         val results = repo.searchMealsByName(query)
-        _uiState.value = _uiState.value.copy(searchResults = results)
+        _uiState.value = _uiState.value.copy(
+            searchResults = results,
+            infoMessage = if (results.isEmpty() && query.isNotBlank()) "No meals found for '$query'." else null
+        )
     }
 
     fun searchByIngredients(ings: List<String>) = viewModelScope.launch {
+        if (ings.isEmpty()) {
+            _uiState.value = _uiState.value.copy(searchResults = emptyList(), infoMessage = "Please select ingredients to filter.")
+            return@launch
+        }
         val joined = ings.joinToString(",") { it.lowercase().replace(" ", "_") }
-        val results = repo.searchMealsByIngredient(joined)
-        _uiState.value = _uiState.value.copy(searchResults = results)
+        val results = repo.searchMealsByIngredient(joined) // This is your existing function for general search
+        _uiState.value = _uiState.value.copy(
+            searchResults = results,
+            infoMessage = if (results.isEmpty()) "No meals found for the selected ingredients." else null
+        )
     }
 
+    // New function for auto-generating and populating the plan
+    fun autoGeneratePlanFromIngredients(selectedIngredients: List<String>) = viewModelScope.launch {
+        if (selectedIngredients.isEmpty()) {
+            _uiState.value = _uiState.value.copy(
+                currentPlan = emptyList(), // Clear current plan
+                searchResults = emptyList(), // Clear search results
+                infoMessage = "Please select ingredients first for auto-generation."
+            )
+            return@launch
+        }
+
+        // Assuming repo.generateMealsFromIngredients is the new function in MealRepository
+        // that fetches meals matching ALL ingredients.
+        val mealsFound = repo.generateMealsFromIngredients(selectedIngredients)
+        val distinctMeals = mealsFound.distinctBy { it.id }
+
+        when {
+            distinctMeals.isEmpty() -> {
+                _uiState.value = _uiState.value.copy(
+                    currentPlan = emptyList(), // Clear current plan
+                    searchResults = emptyList(), // Clear search results
+                    infoMessage = "No meals found matching all selected ingredients for the plan."
+                )
+            }
+            distinctMeals.size == 1 -> {
+                _uiState.value = _uiState.value.copy(
+                    currentPlan = distinctMeals,
+                    searchResults = emptyList(), // Clear search results
+                    infoMessage = "1 meal added to your current plan."
+                )
+            }
+            distinctMeals.size == 2 -> {
+                _uiState.value = _uiState.value.copy(
+                    currentPlan = distinctMeals,
+                    searchResults = emptyList(), // Clear search results
+                    infoMessage = "2 meals added to your current plan."
+                )
+            }
+            else -> { // 3 or more meals
+                val randomThreeMeals = distinctMeals.shuffled().take(3)
+                _uiState.value = _uiState.value.copy(
+                    currentPlan = randomThreeMeals,
+                    searchResults = emptyList(), // Clear search results
+                    infoMessage = "3 random meals added to your current plan."
+                )
+            }
+        }
+    }
+
+
+    // This function was for the old "Generate Full Plan" button, might be redundant or repurposed.
+    // If keeping, ensure it also handles infoMessage.
     fun generateFullPlan(ings: List<String>) = viewModelScope.launch {
-        val plan = repo.generateThreeMeals(ings)
-        _uiState.value = _uiState.value.copy(currentPlan = plan)
+        if (ings.isEmpty()) {
+            _uiState.value = _uiState.value.copy(infoMessage = "Cannot generate full plan without ingredients.")
+            return@launch
+        }
+        val plan = repo.generateThreeMeals(ings) // generateThreeMeals might need similar logic to autoGenerate
+        _uiState.value = _uiState.value.copy(
+            currentPlan = plan,
+            searchResults = emptyList(), // Clear search results
+            infoMessage = if (plan.isEmpty()) "Could not generate a full plan." else "${plan.size} meals generated for the plan."
+        )
     }
 
     // --- editing currentPlan ---
     fun addMeal(meal: Meal) {
-        val updated = (_uiState.value.currentPlan + meal).distinct().take(3)
-        _uiState.value = _uiState.value.copy(currentPlan = updated)
+        // Prevent adding if plan is full, unless you allow replacing.
+        if (_uiState.value.currentPlan.size >= 3 && !_uiState.value.currentPlan.any { it.id == meal.id }) {
+            _uiState.value = _uiState.value.copy(infoMessage = "Plan is full (3 meals). Remove a meal to add another.")
+            return
+        }
+        val updated = (_uiState.value.currentPlan + meal).distinctBy { it.id }.take(3)
+        _uiState.value = _uiState.value.copy(
+            currentPlan = updated,
+            infoMessage = if (updated.size > _uiState.value.currentPlan.size || meal !in _uiState.value.currentPlan) "${meal.name} added." else null
+        )
     }
 
     fun removeMeal(meal: Meal) {
+        val oldSize = _uiState.value.currentPlan.size
+        val updatedPlan = _uiState.value.currentPlan.filterNot { it.id == meal.id }
         _uiState.value = _uiState.value.copy(
-            currentPlan = _uiState.value.currentPlan.filterNot { it.id == meal.id }
+            currentPlan = updatedPlan,
+            infoMessage = if (updatedPlan.size < oldSize) "${meal.name} removed." else null
         )
     }
 
     fun clearCurrentPlan() {
-        _uiState.value = _uiState.value.copy(currentPlan = emptyList())
+        if (_uiState.value.currentPlan.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(currentPlan = emptyList(), infoMessage = "Current plan cleared.")
+        } else {
+            _uiState.value = _uiState.value.copy(infoMessage = null) // Or "Plan is already empty."
+        }
     }
 
     // --- saving to savedPlans ---
     @RequiresApi(Build.VERSION_CODES.O)
     fun saveCurrentPlan() {
         val meals = _uiState.value.currentPlan
+        // Allow saving if there's at least one meal, or enforce 3.
+        // For this example, let's stick to the 3-meal requirement for saving.
         if (meals.size == 3) {
             val newPlan = MealPlan(
                 id = planIdCounter.getAndIncrement(),
@@ -81,16 +169,31 @@ class GenerateViewModel : ViewModel() {
                 meals = meals
             )
             _savedPlans.add(newPlan)
-            _uiState.value = _uiState.value.copy(currentPlan = emptyList())
+            _uiState.value = _uiState.value.copy(
+                currentPlan = emptyList(), // Clear after saving
+                searchResults = emptyList(), // Clear search results
+                infoMessage = "Plan #${newPlan.id} saved successfully!"
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(
+                infoMessage = "Your plan needs 3 meals to be saved."
+            )
         }
+    }
+
+    // Function to manually clear the info message, e.g., when user dismisses it
+    fun clearInfoMessage() {
+        _uiState.value = _uiState.value.copy(infoMessage = null)
     }
 
     // --- selection for navigation ---
     fun selectMeal(meal: Meal) {
         _selectedMeal.value = meal
+        // _uiState.value = _uiState.value.copy(infoMessage = null) // Clear message on navigation
     }
 
     fun selectPlan(plan: MealPlan) {
         _selectedPlan.value = plan
+        // _uiState.value = _uiState.value.copy(infoMessage = null) // Clear message on navigation
     }
 }

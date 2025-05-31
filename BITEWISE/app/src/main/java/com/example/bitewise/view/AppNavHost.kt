@@ -68,23 +68,62 @@ fun AppNavHost() {
             )
         }
 
-        // Generate
+//        // Generate
+//        composable("generate") {
+//            GenerateScreen(
+//                vm = vm,
+//                onDetail = { navController.navigate("detail") },
+//                onPlan = { navController.navigate("plan") },
+//                onIngredientSelect = { navController.navigate("ingredientSelection") }
+//            )
+//        }
+//
+//        // Ingredient picker
+//        composable("ingredientSelection") {
+//            IngredientSelectionScreen(
+//                onBack = { navController.popBackStack() },
+//                onSearch = {
+//                    vm.searchByIngredients(it)
+//                    navController.popBackStack()
+//                }
+//            )
+//        }
+        // Generate Screen - Modify to add a new navigation callback
         composable("generate") {
             GenerateScreen(
                 vm = vm,
                 onDetail = { navController.navigate("detail") },
                 onPlan = { navController.navigate("plan") },
-                onIngredientSelect = { navController.navigate("ingredientSelection") }
+                onIngredientSelect = { navController.navigate("ingredientSelection") },
+                // New navigation callback for the auto-generate feature
+                onAutoGenerateIngredientSelect = { navController.navigate("autoGenerateIngredientSelection") }
             )
         }
 
-        // Ingredient picker
+        // Ingredient picker for regular search
         composable("ingredientSelection") {
             IngredientSelectionScreen(
                 onBack = { navController.popBackStack() },
-                onSearch = {
-                    vm.searchByIngredients(it)
-                    navController.popBackStack()
+                onSearch = { ingredients ->
+                    vm.searchByIngredients(ingredients) // Existing search by ingredients
+                    navController.popBackStack() // Go back to GenerateScreen to show results
+                }
+            )
+        }
+
+        // New: Ingredient picker for Auto-Generate Plan
+        composable("autoGenerateIngredientSelection") {
+            IngredientSelectionScreen(
+                onBack = { navController.popBackStack() },
+                onSearch = { ingredients ->
+                    vm.autoGeneratePlanFromIngredients(ingredients)
+                    // Navigate to the plan screen to see the auto-populated plan,
+                    // or back to generate screen if you want to show the message there.
+                    // Let's navigate to the plan screen.
+                    navController.navigate("plan") {
+                        popUpTo("autoGenerateIngredientSelection") { inclusive = true }
+                        // Optionally popUpTo("generate") as well if coming from there
+                    }
                 }
             )
         }
