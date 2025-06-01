@@ -94,5 +94,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Updated to a slightly more common recent version, you can use 33.14.0 if you prefer
     implementation("com.google.firebase:firebase-analytics-ktx") // Use -ktx for Kotlin ananlytics
     implementation("com.google.firebase:firebase-auth-ktx")
+    // Add this for Realtime Database
+    implementation("com.google.firebase:firebase-database-ktx")
     // You don't need to declare the BOM twice. One platform entry is sufficient.
 }

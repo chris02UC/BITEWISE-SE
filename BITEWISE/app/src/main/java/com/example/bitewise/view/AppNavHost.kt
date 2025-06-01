@@ -4,12 +4,12 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bitewise.viewmodel.AuthVM
 import com.example.bitewise.viewmodel.GenerateViewModel
-// import com.example.bitewise.view.* // Already have specific imports
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -18,32 +18,52 @@ fun AppNavHost() {
     val authVM: AuthVM = viewModel()
     val vm: GenerateViewModel = viewModel()
 
-    val isLoggedIn = authVM.loggedInEmail != null
+    val currentUserId = authVM.currentUserId
+    val initialDestination = if (currentUserId != null) "dashboard" else "login"
+
+    LaunchedEffect(authVM.currentUserId) {
+        val userId = authVM.currentUserId
+        if (userId != null) {
+            vm.reinitializeForUser(userId)
+        }
+    }
 
     NavHost(
         navController = navController,
-        startDestination = if (isLoggedIn) "dashboard" else "login"
+        startDestination = initialDestination
     ) {
 
-        // Login
         composable("login") {
             LoginView(
                 authVM = authVM,
-                onLoginSuccess = { navController.navigate("dashboard") { popUpTo("login") { inclusive = true } } },
+                onLoginSuccess = {
+                    authVM.currentUserId?.let { userId ->
+                        vm.reinitializeForUser(userId)
+                    }
+                    navController.navigate("dashboard") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
                 onNavigateToRegister = { navController.navigate("register") }
             )
         }
 
-        // Register
         composable("register") {
             RegisterView(
                 authVM = authVM,
-                onRegisterSuccess = { navController.navigate("dashboard") { popUpTo("register") { inclusive = true } } },
+                onRegisterSuccess = {
+                    authVM.currentUserId?.let { userId ->
+                        vm.reinitializeForUser(userId)
+                    }
+                    navController.navigate("dashboard") {
+                        popUpTo("register") { inclusive = true }
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
                 onNavigateToLogin = { navController.popBackStack() }
             )
         }
 
-        // Dashboard
         composable("dashboard") {
             DashboardScreen(
                 vm = vm,
@@ -51,14 +71,19 @@ fun AppNavHost() {
                 onPlanClick = { navController.navigate("planDetail") },
                 onGenerateClick = { navController.navigate("generate") },
                 onLogout = {
-                    navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
+                    authVM.logout {
+                        vm.clearUserSpecificData()
+                        navController.navigate("login") {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
                     }
                 }
             )
         }
 
-        // Generate Screen
         composable("generate") {
             GenerateScreen(
                 vm = vm,
@@ -66,15 +91,14 @@ fun AppNavHost() {
                 onPlan = { navController.navigate("plan") },
                 onIngredientSelect = { navController.navigate("ingredientSelection") },
                 onAutoGenerateIngredientSelect = { navController.navigate("autoGenerateIngredientSelection") },
-                onBack = { navController.popBackStack() } // Added this line
+                onBack = { navController.popBackStack() }
             )
         }
 
-        // Ingredient picker for regular search/filter
         composable("ingredientSelection") {
             IngredientSelectionScreen(
                 onBack = { navController.popBackStack() },
-                mode = IngredientSelectionMode.SEARCH_FILTER, // Pass mode
+                mode = IngredientSelectionMode.SEARCH_FILTER,
                 onSearch = { ingredients ->
                     vm.searchByIngredients(ingredients)
                     navController.popBackStack()
@@ -82,30 +106,19 @@ fun AppNavHost() {
             )
         }
 
-        // New: Ingredient picker for Auto-Generate Plan
         composable("autoGenerateIngredientSelection") {
             IngredientSelectionScreen(
                 onBack = { navController.popBackStack() },
-                mode = IngredientSelectionMode.AUTO_GENERATE_PLAN, // Pass mode
+                mode = IngredientSelectionMode.AUTO_GENERATE_PLAN,
                 onSearch = { ingredients ->
                     vm.autoGeneratePlanFromIngredients(ingredients)
-                    // Navigate to the plan screen to see the auto-populated plan,
-                    // or back to generate screen if you want to show the message there.
-                    // Let's navigate to the plan screen.
                     navController.navigate("plan") {
-                        // Pop this screen off the stack
                         popUpTo("autoGenerateIngredientSelection") { inclusive = true }
-                        // Optionally popUpTo("generate") as well if coming from there,
-                        // but the current autoGeneratePlanFromIngredients does not clear searchResults
-                        // on GenerateScreen, so staying on plan seems cleaner for this flow.
-                        // If GenerateScreen should be the intermediate, then:
-                        // popUpTo("generate") { inclusive = false }
                     }
                 }
             )
         }
 
-        // Detail from Generate
         composable("detail") {
             MealDetailScreen(
                 vm = vm,
@@ -114,20 +127,20 @@ fun AppNavHost() {
             )
         }
 
-        // Current in-progress plan
-        composable("plan") {
+        composable("plan") { // This is the MealPlanScreen route
             MealPlanScreen(
                 vm = vm,
                 onSave = {
-                    vm.saveCurrentPlan()
-                    // After saving, go back to dashboard, clearing the plan creation flow
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vm.saveCurrentPlan() // This attempts to save the plan
+                    }
+                    // Restored navigation back to dashboard after attempting to save
                     navController.popBackStack("dashboard", inclusive = false)
                 },
                 onBack = { navController.popBackStack() }
             )
         }
 
-        // Saved-plan overview
         composable("planDetail") {
             PlanDetailScreen(
                 vm = vm,
@@ -136,7 +149,6 @@ fun AppNavHost() {
             )
         }
 
-        // Detail from Saved-plan
         composable("detailFromPlan") {
             MealDetailScreen(
                 vm = vm,
