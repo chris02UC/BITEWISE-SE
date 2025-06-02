@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack // Import ArrowBack
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -27,6 +27,9 @@ import com.example.bitewise.model.Meal
 import com.example.bitewise.viewmodel.GenerateViewModel
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,15 +37,39 @@ fun GenerateScreen(
     vm: GenerateViewModel = viewModel(),
     onDetail: () -> Unit,
     onPlan: () -> Unit,
-    onIngredientSelect: () -> Unit
+    onIngredientSelect: () -> Unit,
+    onAutoGenerateIngredientSelect: () -> Unit,
+    onBack: () -> Unit // New parameter for back navigation
 ) {
     val state by vm.uiState.collectAsState()
     var input by remember { mutableStateOf("") }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.infoMessage) {
+        state.infoMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+            vm.clearInfoMessage()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Generate Meal Plan") },
+                // Add navigationIcon for the back button
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = onPlan, enabled = state.currentPlan.isNotEmpty()) {
                         Icon(Icons.Default.List, contentDescription = "View Plan")
@@ -91,44 +118,62 @@ fun GenerateScreen(
                     }
                 }
 
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = onAutoGenerateIngredientSelect,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.Star, contentDescription = "Auto-generate")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Auto-Generate Plan by Ingredients")
+                }
+
                 Spacer(Modifier.height(16.dp))
 
-                Text("Results:", style = MaterialTheme.typography.titleSmall)
+                Text("Search Results:", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    items(state.searchResults) { meal ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    vm.selectMeal(meal)
-                                    onDetail()
-                                }
-                        ) {
-                            Row(
-                                Modifier
+                if (state.searchResults.isEmpty()) {
+                    Text(
+                        "No search results to display. Try a different search or filter.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        items(state.searchResults) { meal ->
+                            Card(
+                                modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    .clickable {
+                                        vm.selectMeal(meal)
+                                        onDetail()
+                                    }
                             ) {
-                                AsyncImage(
-                                    model = meal.thumb("small"),
-                                    contentDescription = meal.name,
-                                    modifier = Modifier.size(56.dp)
-                                )
-                                Column {
-                                    Text(meal.name, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        "Tap to view details",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = meal.thumb("small"),
+                                        contentDescription = meal.name,
+                                        modifier = Modifier.size(56.dp)
                                     )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(meal.name, style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            "Tap to view details",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }

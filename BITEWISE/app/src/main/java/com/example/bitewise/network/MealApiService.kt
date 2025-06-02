@@ -5,13 +5,13 @@ import retrofit2.http.Query
 
 interface MealApiService {
     @GET("search.php")
-    suspend fun searchByName(@Query("s") name: String): SearchResponse
+    suspend fun searchByName(@retrofit2.http.Query("s") name: String): SearchResponse
 
     @GET("filter.php")
-    suspend fun filterByIngredients(@Query("i") ingredients: String): FilterResponse
+    suspend fun filterByIngredients(@retrofit2.http.Query("i") ingredients: String): FilterResponse
 
     @GET("lookup.php")
-    suspend fun lookupMeal(@Query("i") id: String): LookupResponse
+    suspend fun lookupMeal(@retrofit2.http.Query("i") id: String): LookupResponse
 
     @GET("random.php")
     suspend fun randomMeal(): SearchResponse

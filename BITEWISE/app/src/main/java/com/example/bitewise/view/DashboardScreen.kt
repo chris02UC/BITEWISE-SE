@@ -12,16 +12,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+// Removed unused import itemsIndexed
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bitewise.model.Meal
-import com.example.bitewise.model.MealPlan
+// Removed unused import Meal
+import com.example.bitewise.model.MealPlan // Assuming MealPlan.kt is in this package
 import com.example.bitewise.viewmodel.GenerateViewModel
 import java.time.format.DateTimeFormatter
 
@@ -29,13 +30,36 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun DashboardScreen(
     vm: GenerateViewModel,
+    authVM: com.example.bitewise.viewmodel.AuthVM,
     onPlanClick: (MealPlan) -> Unit,
-    onGenerateClick: () -> Unit
+    onGenerateClick: () -> Unit,
+    onLogout: () -> Unit // This is the callback lambda to be passed
 ) {
     val plans = vm.savedPlans
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Button(onClick = onGenerateClick, modifier = Modifier.fillMaxWidth()) {
+        // 🔓 Logout 버튼
+        Button(
+            onClick = {
+                // Corrected call: Pass the onLogout lambda to authVM.logout()
+                authVM.logout(onLogout)
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Logout")
+        }
+
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = onGenerateClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Generate Meal Plan")
         }
 
@@ -52,7 +76,7 @@ fun DashboardScreen(
                     Card(modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            vm.selectPlan(plan)
+                            vm.selectPlan(plan) // selectPlan is still in GenerateViewModel
                             onPlanClick(plan)
                         }
                     ) {

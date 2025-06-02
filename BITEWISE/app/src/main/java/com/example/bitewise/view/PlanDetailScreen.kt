@@ -8,8 +8,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete // Import Delete icon
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.* // Import remember and mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -20,7 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
-import androidx.compose.ui.unit.dp
+// Removed redundant import androidx.compose.ui.unit.dp
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -32,6 +33,7 @@ fun PlanDetailScreen(
     onMealClick: () -> Unit
 ) {
     val plan = vm.selectedPlan ?: return
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) } // State for dialog
 
     Scaffold(
         topBar = {
@@ -40,6 +42,11 @@ fun PlanDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = { // Add actions for the delete button
+                    IconButton(onClick = { showDeleteConfirmationDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete Plan")
                     }
                 }
             )
@@ -84,5 +91,30 @@ fun PlanDetailScreen(
                 }
             }
         }
+    }
+
+    // Confirmation Dialog
+    if (showDeleteConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmationDialog = false },
+            title = { Text("Delete Plan") },
+            text = { Text("Are you sure you want to delete this meal plan?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.deleteSelectedPlan() // Call ViewModel function to delete
+                        showDeleteConfirmationDialog = false
+                        onBack() // Navigate back after deletion
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmationDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
