@@ -1,20 +1,22 @@
 package com.example.bitewise.view
 
-// import android.annotation.SuppressLint // Not strictly needed for this composable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete // Assuming this is for the remove meal button
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.* // Import remember and getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-// import androidx.room.Delete // This import is incorrect here; material icons are used.
 import coil.compose.AsyncImage
 import com.example.bitewise.viewmodel.GenerateViewModel
-// Redundant imports like Row, Arrangement, size are covered by androidx.compose.foundation.layout.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,31 +25,54 @@ fun MealPlanScreen(
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {
-    // Collect the entire UI state to access both currentPlan and infoMessage
     val uiState by vm.uiState.collectAsState()
     val plan = uiState.currentPlan
     val infoMessage = uiState.infoMessage
-
-    // SnackbarHostState for managing Snackbar display
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // LaunchedEffect to show Snackbar when infoMessage changes
+    // --- State for Drag and Drop ---
+    val lazyListState = rememberLazyListState()
+    var draggedDistance by remember { mutableStateOf(0f) }
+    // The index of the item being dragged
+    var currentlyDraggingIndex by remember { mutableStateOf<Int?>(null) }
+    // The LazyListItemInfo of the item when the drag started
+    var initialDraggingItemInfo by remember { mutableStateOf<LazyListItemInfo?>(null) }
+
     LaunchedEffect(infoMessage) {
-        infoMessage?.let { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Short
-            )
-            vm.clearInfoMessage() // Clear the message in ViewModel after showing
+        infoMessage?.let {
+            snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Short)
+            vm.clearInfoMessage()
+        }
+    }
+
+    // This is the core of the fix. It runs when an item is being dragged.
+    LaunchedEffect(draggedDistance) {
+        val draggingItem = initialDraggingItemInfo ?: return@LaunchedEffect
+        val draggingIndex = currentlyDraggingIndex ?: return@LaunchedEffect
+
+        // Calculate the new absolute Y position of the dragged item
+        val draggingItemY = draggingItem.offset + draggedDistance
+
+        // Find the item that the dragged item is currently hovering over
+        val targetItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { item ->
+            // Check if the center of the dragging item is within the bounds of another item
+            draggingItemY > item.offset && draggingItemY < (item.offset + item.size) && draggingIndex != item.index
+        }
+
+        if (targetItem != null) {
+            // If we found a target, trigger the reorder in the ViewModel
+            // This creates the "live" reordering effect
+            vm.reorderCurrentPlan(draggingIndex, targetItem.index)
+            // Update the currently dragging index to the new position
+            currentlyDraggingIndex = targetItem.index
         }
     }
 
     Scaffold(
-        // Add SnackbarHost to the Scaffold
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Current Meal Plan") },
+                title = { Text("Current Meal Plan (Drag to Reorder)") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -67,48 +92,74 @@ fun MealPlanScreen(
                     .padding(padding)
                     .padding(16.dp)
             ) {
-                // Conditional text if the plan is empty.
-                // The Snackbar will show specific messages like "No meals found for your filters."
-                // This text can be a more generic fallback.
                 if (plan.isEmpty()) {
-                    // If an info message exists (e.g., "No meals found..."),
-                    // the Snackbar will show it. This text can be a fallback.
-                    // Or, if you prefer the message to be directly in the content area:
-                    // Text(infoMessage ?: "No meals added yet.", style = MaterialTheme.typography.bodyMedium)
                     Text("No meals added yet.", style = MaterialTheme.typography.bodyMedium)
                 }
 
-                // LazyColumn will be empty if 'plan' is empty.
                 LazyColumn(
+                    state = lazyListState,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f) // Ensure LazyColumn takes available space
+                    modifier = Modifier.weight(1f)
                 ) {
-                    items(plan) { meal ->
-                        Card(
-                            modifier = Modifier
+                    itemsIndexed(plan, key = { _, meal -> meal.id }) { index, meal ->
+                        val isDragging = index == currentlyDraggingIndex
+
+                        // Apply a visual effect to the item being dragged
+                        val cardModifier = if (isDragging) {
+                            Modifier
                                 .fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                AsyncImage(
-                                    model = meal.thumb("small"),
-                                    contentDescription = meal.name,
-                                    modifier = Modifier.size(56.dp)
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(meal.name, style = MaterialTheme.typography.bodyLarge)
+                                .graphicsLayer {
+                                    translationY = draggedDistance
+                                    shadowElevation = 8f
                                 }
-                                IconButton(
-                                    onClick = { vm.removeMeal(meal) }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Delete, // Corrected icon
-                                        contentDescription = "Remove ${meal.name}"
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
+
+                        // The Card UI, wrapped with the drag-and-drop logic
+                        Box(
+                            modifier = Modifier
+                                .pointerInput(Unit) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            // Directly use the known index instead of recalculating from offsets
+                                            currentlyDraggingIndex = index
+                                            initialDraggingItemInfo = lazyListState
+                                                .layoutInfo
+                                                .visibleItemsInfo
+                                                .firstOrNull { it.index == index }
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            draggedDistance += dragAmount.y
+                                        },
+                                        onDragEnd = {
+                                            // Reset states when drag ends
+                                            draggedDistance = 0f
+                                            currentlyDraggingIndex = null
+                                            initialDraggingItemInfo = null
+                                        }
                                     )
+                                }
+                        ) {
+                            Card(modifier = cardModifier) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = meal.thumb("small"),
+                                        contentDescription = meal.name,
+                                        modifier = Modifier.size(56.dp)
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(meal.name, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                                    IconButton(onClick = { vm.removeMeal(meal) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remove ${meal.name}")
+                                    }
                                 }
                             }
                         }
@@ -119,7 +170,7 @@ fun MealPlanScreen(
 
                 Button(
                     onClick = onSave,
-                    enabled = plan.size == 3, // Keep existing save logic
+                    enabled = plan.size == 3,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Save Meal Plan")
