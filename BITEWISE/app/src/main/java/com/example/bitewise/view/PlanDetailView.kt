@@ -14,7 +14,7 @@ import androidx.compose.runtime.* // Import remember and mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -27,8 +27,8 @@ import androidx.compose.foundation.layout.height
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlanDetailScreen(
-    vm: GenerateViewModel,
+fun PlanDetailView(
+    vm: GenerateVM,
     onBack: () -> Unit,
     onMealClick: () -> Unit
 ) {

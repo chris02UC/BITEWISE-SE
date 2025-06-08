@@ -23,13 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 // Removed unused import Meal
 import com.example.bitewise.model.MealPlan // Assuming MealPlan.kt is in this package
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DashboardScreen(
-    vm: GenerateViewModel,
+fun DashboardView(
+    vm: GenerateVM,
     authVM: com.example.bitewise.viewmodel.AuthVM,
     onPlanClick: (MealPlan) -> Unit,
     onGenerateClick: () -> Unit,

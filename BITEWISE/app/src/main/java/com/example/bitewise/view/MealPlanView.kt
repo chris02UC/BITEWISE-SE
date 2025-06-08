@@ -16,12 +16,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealPlanScreen(
-    vm: GenerateViewModel,
+fun MealPlanView(
+    vm: GenerateVM,
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {

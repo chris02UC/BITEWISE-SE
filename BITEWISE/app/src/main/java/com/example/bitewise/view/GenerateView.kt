@@ -23,7 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.SnackbarDuration
@@ -32,8 +32,8 @@ import androidx.compose.material3.SnackbarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GenerateScreen(
-    vm: GenerateViewModel = viewModel(),
+fun GenerateView(
+    vm: GenerateVM = viewModel(),
     onDetail: () -> Unit,
     onPlan: () -> Unit,
     onIngredientSelect: () -> Unit,

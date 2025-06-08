@@ -9,14 +9,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bitewise.viewmodel.AuthVM
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
     val authVM: AuthVM = viewModel()
-    val vm: GenerateViewModel = viewModel()
+    val vm: GenerateVM = viewModel()
 
     val currentUserId = authVM.currentUserId
     val initialDestination = if (currentUserId != null) "dashboard" else "login"
@@ -65,7 +65,7 @@ fun AppNavHost() {
         }
 
         composable("dashboard") {
-            DashboardScreen(
+            DashboardView(
                 vm = vm,
                 authVM = authVM,
                 onPlanClick = { navController.navigate("planDetail") },
@@ -85,7 +85,7 @@ fun AppNavHost() {
         }
 
         composable("generate") {
-            GenerateScreen(
+            GenerateView(
                 vm = vm,
                 onDetail = { navController.navigate("detail") },
                 onPlan = { navController.navigate("plan") },
@@ -96,7 +96,7 @@ fun AppNavHost() {
         }
 
         composable("ingredientSelection") {
-            IngredientSelectionScreen(
+            IngredientSelectionView(
                 onBack = { navController.popBackStack() },
                 mode = IngredientSelectionMode.SEARCH_FILTER,
                 onSearch = { ingredients ->
@@ -107,7 +107,7 @@ fun AppNavHost() {
         }
 
         composable("autoGenerateIngredientSelection") {
-            IngredientSelectionScreen(
+            IngredientSelectionView(
                 onBack = { navController.popBackStack() },
                 mode = IngredientSelectionMode.AUTO_GENERATE_PLAN,
                 onSearch = { ingredients ->
@@ -120,15 +120,15 @@ fun AppNavHost() {
         }
 
         composable("detail") {
-            MealDetailScreen(
+            MealDetailView(
                 vm = vm,
                 onBack = { navController.popBackStack() },
                 fromSaved = false
             )
         }
 
-        composable("plan") { // This is the MealPlanScreen route
-            MealPlanScreen(
+        composable("plan") { // This is the MealPlanView route
+            MealPlanView(
                 vm = vm,
                 onSave = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -142,7 +142,7 @@ fun AppNavHost() {
         }
 
         composable("planDetail") {
-            PlanDetailScreen(
+            PlanDetailView(
                 vm = vm,
                 onBack = { navController.popBackStack() },
                 onMealClick = { navController.navigate("detailFromPlan") }
@@ -150,7 +150,7 @@ fun AppNavHost() {
         }
 
         composable("detailFromPlan") {
-            MealDetailScreen(
+            MealDetailView(
                 vm = vm,
                 onBack = { navController.popBackStack() },
                 fromSaved = true

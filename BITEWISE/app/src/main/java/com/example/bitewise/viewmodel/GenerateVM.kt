@@ -30,7 +30,7 @@ data class GenerateUiState(
     val infoMessage: String? = null
 )
 
-class GenerateViewModel : ViewModel() {
+class GenerateVM : ViewModel() {
     private val repo = MealRepository()
     private val _uiState = MutableStateFlow(GenerateUiState())
     val uiState: StateFlow<GenerateUiState> = _uiState

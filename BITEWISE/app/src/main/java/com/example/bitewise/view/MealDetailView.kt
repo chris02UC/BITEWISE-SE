@@ -11,13 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealDetailScreen(
-    vm: GenerateViewModel,
+fun MealDetailView(
+    vm: GenerateVM,
     onBack: () -> Unit,
     fromSaved: Boolean         // new flag
 ) {
