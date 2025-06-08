@@ -23,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.bitewise.model.Meal
 import com.example.bitewise.viewmodel.GenerateViewModel
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.FilterList
