@@ -11,12 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.bitewise.viewmodel.GenerateViewModel
+import com.example.bitewise.viewmodel.GenerateVM
 
+@SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealDetailScreen(
-    vm: GenerateViewModel,
+fun MealDetailView(
+    vm: GenerateVM,
     onBack: () -> Unit,
     fromSaved: Boolean         // new flag
 ) {
@@ -49,6 +50,19 @@ fun MealDetailScreen(
                         .height(200.dp)
                 )
                 Spacer(Modifier.height(16.dp))
+
+                // Added Ingredients section
+                Text("Ingredients:", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                meal.ingredients.forEach { ingredient ->
+                    Text(
+                        text = "• $ingredient",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+
                 Text("Instructions:", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Text(meal.instructions, style = MaterialTheme.typography.bodyMedium)

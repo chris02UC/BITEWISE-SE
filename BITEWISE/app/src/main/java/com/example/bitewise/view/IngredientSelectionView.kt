@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IngredientSelectionScreen(
+fun IngredientSelectionView(
     onSearch: (List<String>) -> Unit,
     onBack: () -> Unit,
     mode: IngredientSelectionMode

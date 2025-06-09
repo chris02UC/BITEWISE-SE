@@ -30,7 +30,7 @@ data class GenerateUiState(
     val infoMessage: String? = null
 )
 
-class GenerateViewModel : ViewModel() {
+class GenerateVM : ViewModel() {
     private val repo = MealRepository()
     private val _uiState = MutableStateFlow(GenerateUiState())
     val uiState: StateFlow<GenerateUiState> = _uiState
@@ -79,6 +79,7 @@ class GenerateViewModel : ViewModel() {
         }
 
         plansValueEventListener = object : ValueEventListener {
+            @RequiresApi(Build.VERSION_CODES.O)
             override fun onDataChange(snapshot: DataSnapshot) {
                 _savedPlans.clear()
                 snapshot.children.forEach { planSnapshot ->
@@ -370,4 +371,13 @@ class GenerateViewModel : ViewModel() {
         _selectedPlan.value = null
         _selectedMeal.value = null
     }
+
+    fun reorderCurrentPlan(from: Int, to: Int) {
+        _uiState.value = _uiState.value.copy(
+            currentPlan = _uiState.value.currentPlan.toMutableList().apply {
+                add(to, removeAt(from))
+            }
+        )
+    }
+
 }
