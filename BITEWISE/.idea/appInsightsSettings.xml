@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.bitewise" />
+                  <option name="mobileSdkAppId" value="1:468178384496:android:58d38ad9a9e251544526b5" />
+                  <option name="projectId" value="se-alp-auth" />
+                  <option name="projectNumber" value="468178384496" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
